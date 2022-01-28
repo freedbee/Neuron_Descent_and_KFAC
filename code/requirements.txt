@@ -1,1 +1,17 @@
-
+# This file may be used to create an environment using:
+# $ conda create --name <env> --file <this file>
+# platform: linux-64
+ipykernel=5.3.4=py38h5ca1d4c_0
+ipython=7.23.1=py38hd0cf306_0
+ipython_genutils=0.2.0=py_1
+jupyter_client=6.1.12=pyhd8ed1ab_0
+jupyter_core=4.7.1=py38h578d9bd_0
+jupyterlab_pygments=0.1.2=pyh9f0ad1d_0
+notebook=6.3.0=py38h06a4308_0
+numpy=1.20.1=py38h93e21f0_0
+numpy-base=1.20.1=py38h7d8b39e_0
+python=3.8.8=hdb3f193_5
+pytorch=1.8.1=py3.8_cuda11.1_cudnn8.0.5_0
+scipy=1.6.2=py38had2a1c9_1
+torchaudio=0.8.1=py38
+torchvision=0.9.1=py38_cu111
