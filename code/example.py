@@ -13,7 +13,7 @@ parser.add_argument("-n_ep", default=10,
 parser.add_argument("-subset", default=0,
                     type=int, help='determines whether training set is restricted to subset of 1000 images. Note that this choice overwrites the batch size.')
 parser.add_argument("-dataset", default='fashion',
-                    choices=['mnist', 'fashion'],
+                    choices=['mnist', 'fashion', 'cifar10'],
                     type=str)
 parser.add_argument("-batch_size", default=100,
                     type=int)
@@ -38,6 +38,11 @@ parser.add_argument("-kf_n_update_steps", default=None)
 parser.add_argument("-mc_fisher", default=1, type=int)
 parser.add_argument("-seed", default=42,
                     type=int, help="What's your question?")
+parser.add_argument("-arch", default='fc', type=str, 
+                    choices=['fc', 'resnet'],
+                    help='architecture, fully connected or ResNet18')
+parser.add_argument("-resnet_bn", default=1, type=int,  
+                    help='determines whether resnet uses batch norm')
 
 #os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"   
 #os.environ["CUDA_VISIBLE_DEVICES"]="1"
@@ -63,11 +68,15 @@ width = 1000
 depth = 3
 input_dim = 784
 output_dim = num_classes
-net = architectures.SimpleFCNet(width=width, 
-                                depth=depth, 
-                                input_dim=input_dim, 
-                                output_dim=output_dim, 
-                                )
+
+if args.arch == 'fc':
+    net = architectures.SimpleFCNet(width=width, 
+                                    depth=depth, 
+                                    input_dim=input_dim, 
+                                    output_dim=output_dim, 
+                                    )
+elif args.arch == 'resnet':
+    net = architectures.ResNet18(bn=args.resnet_bn)
 
 if args.optimizer in ['foof', 'kfac', 'natural', 'natural_bd']:
     net.set_optimizer(args.optimizer)
@@ -93,7 +102,7 @@ criterion = torch.nn.CrossEntropyLoss()
 
 
 if args.optimizer == 'sgd':
-    optimizer = torch.optim.SGD(net.parameters(), lr=args.lr, momentum=sgd_mom)
+    optimizer = torch.optim.SGD(net.parameters(), lr=args.lr, momentum=args.sgd_mom)
 elif args.optimizer == 'adam':
     optimizer = torch.optim.Adam(net.parameters(), lr=args.lr)
 else:
@@ -114,7 +123,7 @@ for epoch in range(args.n_ep):
             net.set_hooks(forward_hook=fh)
             do_print = 1
             if do_print:
-                print('train loss', loss.item(), '   (mini-batch estimate)')         
+                print(' pre update train loss', loss.item(), '   (mini-batch estimate)')         
         if args.optimizer in ['sgd', 'adam']:
             loss = criterion(net(X), y)
             loss.backward()
@@ -122,5 +131,14 @@ for epoch in range(args.n_ep):
             optimizer.zero_grad()
         if args.optimizer in ['foof', 'kfac', 'natural', 'natural_bd']:
             net.parameter_update(X,y)
-
         
+            if t%measure_freq == 0:
+            # disable hook before collecting train stats, and reset after
+                fh = net.forward_hook
+                net.set_hooks(forward_hook=False)
+                loss = criterion(net(X), y)
+                net.set_hooks(forward_hook=fh)
+                do_print = 1
+                if do_print:
+                    print('post update train loss', loss.item(), '   (mini-batch estimate)')    
+            
